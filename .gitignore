@@ -16,3 +16,5 @@ android/
 *.jks
 *.keystore
 *.p12
+Build Version Label Demo.console.exe
+Build Version Label Demo.exe

@@ -1,133 +1,52 @@
 # Build Version Label
 
-Keep every build of your Godot game tagged with a version you never have to remember to bump.
+One build counter for the whole Godot project. Every **Run Project (F5/F6)** in the editor and
+every **export, on any platform** is a build: its numbers go into the package, into the export
+presets, and into the label in your game — and the next build's number is already ready.
 
-On each Android export the addon:
+```
+Version 1.0.0 (build 12)     <- this run / this export
+Version 1.0.0 (build 13)     <- the next one, already written into export_presets.cfg
+```
 
-1. reads `version/name` and `version/code` from the export preset,
-2. embeds them into `config/build_info.json` inside the exported package,
-3. raises `version/code` in `export_presets.cfg` by one, so the next export is always a
-   different build and Google Play never rejects a repeated version code.
+Two ways to count, picked in Project Settings:
 
-At runtime a `BuildVersionLabel` node prints the same values in any scene with no script of
-its own. The editor gets a toolbar button showing the current version and a Project menu
-entry that bumps the build code without exporting.
+- `builds_per_version = 9999` with `on_limit_reached = Raise patch and restart the count`
+  takes `1.0.0 (build 9999)` to `1.0.1 (build 1)`;
+- `builds_per_version = 0` lets the build code rise without end: `1.1.3 (build 9999999)`.
 
-Tested on Godot **4.7.2** (should work on any Godot 4.x with Android export).
+`store_code_mode = Always rising` keeps the number Google Play and the App Store see monotonic
+even when the displayed build restarts.
 
-## Install
-
-1. Copy the whole `build_version_label/` folder into your project's `addons/` directory.
-2. **Project → Project Settings → Plugins** (or **Project → Tools → Plugins**) and tick
-   **Build Version Label**.
-3. Enable the Android export preset's version fields:
-   **Project → Export → <your preset> → Android → Version Code** and **Version Name**.
-   The addon only changes `version/code`; `version/name` stays yours to set.
-4. Done. Nothing else to create — the addon writes the build stamp into the package itself,
-   so you do **not** need a `config/build_info.json` file in your project.
-
-The addon adds no autoloads and touches no scene, so enabling it cannot break an existing
-project. Unchecking the plugin returns the project to its previous state.
+The full documentation — install, every setting, how the numbers are decided, the editor
+tools — is in **[`addons/build_version_label/README.md`](addons/build_version_label/README.md)**.
 
 ## This repository
 
-The repository root **is a runnable Godot project**, so you can open it in Godot 4.7 and see the
-addon working: `demo.tscn` prints the stamp held in `config/build_info.json` (a committed sample —
-your own project does not need that file, the export creates it). The addon itself lives in
-`addons/build_version_label/`, which is the only folder you have to copy into your project.
+The repository root **is a runnable Godot 4.7 project**, so you can open it and try the addon:
+`demo.tscn` prints the stamp held in `config/build_info.json` (a committed sample; your own
+project does not need that file, the plugin creates it). The addon itself is
+`addons/build_version_label/` — the only folder you have to copy.
 
 ```
-build_version_label/          # this repo: open it in Godot to try the addon
-├── demo.tscn                 # demo scene: a BuildVersionLabel node
-├── project.godot             # plugin already enabled
-├── config/build_info.json    # sample stamp so the demo prints without exporting
-└── addons/build_version_label/   # <- the addon; copy this folder
+build_version_label/            # this repo: open it in Godot to try the addon
+├── demo.tscn                   # a BuildVersionLabel node plus a hint line
+├── project.godot               # plugin enabled, all settings listed explicitly
+├── config/build_info.json      # sample stamp so the demo prints without exporting
+├── tests/build_version_tests.gd  # headless tests for the counting rules
+└── addons/build_version_label/   # <- the addon
 ```
 
-## Show the version in your game
-
-Add the custom node type **BuildVersionLabel** (it is a `Label`) to any scene — the main menu,
-a pause screen, a splash. It reads the build stamp by itself; no code needed.
+## Run the tests
 
 ```
-MainMenu (Control)
-└── VersionLabel (BuildVersionLabel)
+godot --headless --path . --script res://tests/build_version_tests.gd
 ```
 
-Outside the editor (e.g. your own splash or debug overlay) you can read the same data from code:
-
-```gdscript
-var info := BuildVersion.read()          # {"version_name": "1.0.0", "version_code": 7}
-if not info.is_empty():
-    print(BuildVersion.render(info))     # whatever format you picked in Project Settings
-```
-
-Before the first export there is no stamp yet, so `BuildVersionLabel` shows the
-`fallback_version` from Project Settings instead of an empty label.
-
-## Settings
-
-**Project → Project Settings → Build Version Label**
-
-| Setting | Default | Meaning |
-|---|---|---|
-| `display_format_preset` | `Version 1.2.0 (build 21)` | Dropdown that picks the label format (see the table below). |
-| `display_label_format` | `Version %s (build %d)` | Free-text format, used only when the preset is **Custom**. `%s` = version name, `%d` = version code. |
-| `fallback_version` | `0.0.0` | Shown before the first build created `build_info.json`. |
-
-All three are read live, so changing the format updates the label the next time it refreshes.
-
-The presets exist so the common shapes are one click away:
-
-| Preset | Prints |
-|---|---|
-| `Version 1.2.0 (build 21)` | `Version 1.2.0 (build 21)` |
-| `v1.2.0 (21)` | `v1.2.0 (21)` |
-| `1.2.0 (21)` | `1.2.0 (21)` |
-| `1.2.0+21` | `1.2.0+21` |
-| `1.2.0` | `1.2.0` |
-| `Custom — use display_label_format` | whatever `display_label_format` says |
-
-A format only has to use the placeholders it wants: `1.2.0` from `%s` alone is fine, and so is
-`build %d` — the addon passes only the values the string actually consumes, because Godot's `%`
-operator errors out (and prints the raw format) when an argument goes unused.
-
-## Editor tools
-
-- **Toolbar button** (canvas editor menu strip): shows `v<name> (build <code>)`.
-  - Left click — a dialog with the current version info and the format in effect.
-  - Right click — raises `version/code` of the first preset that has one, without exporting.
-- **Project → Tools → Build Version: bump build code** — the same manual bump from the menu.
-
-The manual bump is handy when you rebuild the same version repeatedly during testing and want
-the Play Console to see distinct build numbers.
-
-## How it decides the numbers
-
-`version_name` is never touched — that is your release version. Only the numeric code advances,
-and it advances past whichever is higher of "the preset the editor is exporting" and "the value
-currently in `export_presets.cfg`". That guard matters: if the editor still holds a stale copy of
-`export_presets.cfg` in memory (a known Godot behavior after an external edit), the plugin warns
-and keeps the file's higher value instead of reusing a number.
-
-If you export, get a warning about a stale preset, and then reload the project
-(**Project → Reload Current Project**), the conflict disappears.
-
-## Files
-
-```
-addons/build_version_label/
-├── plugin.cfg              # addon metadata, loaded by the plugin list
-├── plugin.gd               # editor side: settings, custom type, toolbar, menu
-├── export_plugin.gd        # export hook: stamp + advance
-├── build_version.gd        # shared paths, Project Settings keys, format choice, read() helper
-├── build_version_label.gd  # the Label node
-├── version_bump.gd         # pure export_presets.cfg rewriting (testable offline)
-├── README.md / LICENSE.md / CHANGELOG.md
-```
-
-`version_bump.gd` is deliberately free of editor dependencies: it only reads and rewrites text,
-so you can unit-test it in a headless run without an export.
+114 checks over the version arithmetic, the builds-per-version rules, the `export_presets.cfg`
+rewriting (CRLF included), the state file, the two export phases and the manual bumps. Everything
+runs against throwaway files under `user://`, so the demo's own stamp and preset file are never
+touched; the process exits non-zero when an assertion fails.
 
 ## License
 

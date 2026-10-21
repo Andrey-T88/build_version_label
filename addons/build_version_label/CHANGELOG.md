@@ -1,5 +1,48 @@
 # Changelog
 
+## 3.0.0
+
+One counter for the whole project: builds are no longer an Android-export event.
+
+- Every **Run Project (F5/F6)** in the editor counts as a build. `plugin.gd::_build()` records it
+  before the project boots, so the label in the running game prints its own number; an
+  `is_playing_scene()` check in `_process()` covers the paths that skip that hook (older engines,
+  embedded play), with a cooldown so one run is never counted twice.
+- Every **export, on any platform**, counts as a build — `_supports_platform()` no longer limits
+  itself to Android. Desktop `application/file_version` / `product_version` and the mobile
+  `version/code` / `version/name` all come from the same counter, so every export shows the same
+  version.
+- The counter now lives in `config/build_info.json` as state: the last build
+  (`version_name`/`version_code`/`store_code`), the pending numbers of the next build
+  (`next_*`), `total_builds`, and `event`/`preset`/`updated`. A package only ever receives the
+  runtime view — the numbers of the build it is.
+- Counting rules in Project Settings: `builds_per_version` plus `on_limit_reached` give both
+  variants — `1.0.0 (build 9999)` -> `1.0.1 (build 1)`, or a build code that rises without end;
+  `first_build` picks where a restarted count begins and `store_code_mode = Always rising` keeps
+  the store code monotonic while the displayed build resets.
+- The pending numbers are pushed into the **live export preset** at `_export_begin`, so a build
+  exports the right version code without reloading the project — the manifest is generated from
+  the preset object, and that is the only moment the editor hands one out.
+- The counter is written in `_export_end()` instead of at the start: the editor rewrites
+  `export_presets.cfg` from its own in-memory copy during a GUI export, which used to leave a
+  preset one build behind the stamp. A cancelled export no longer consumes a number, and
+  `Bump.build_numbers()` / `Bump.record_build()` split the two phases for that.
+- Once a second the addon compares the preset file with the counter and repairs a preset the
+  editor left on the previous build (`Bump.out_of_sync()`); a version typed by hand is reported
+  in the details dialog instead of being silently reverted.
+- New Project Settings: `bump_on_run`, `bump_on_export`, `builds_per_version`, `on_limit_reached`,
+  `first_build`, `store_code_mode`, `sync_export_presets`, `seed_version_name`,
+  `create_missing_stamp`.
+- `export_presets.cfg` rewriting preserves everything else byte for byte, CRLF endings included,
+  and skips Windows file versions whose components do not fit 16 bits.
+- A stamp written by 2.x (two keys only) is read and completed on the fly: the next build
+  continues from its `version_code`, so upgrading never restarts a store counter.
+- Toolbar button now shows `last -> next`, the details dialog lists the rule in effect, the
+  presets carrying version fields and their sync state, and can set a version by hand (which
+  restarts the count).
+- `tests/build_version_tests.gd`: 114 headless checks over the version arithmetic, the limit
+  rules, the preset rewriting, the state file, the export/run phases and the manual bumps.
+
 ## 2.1.0
 
 - New `display_format_preset` Project Setting: a dropdown of ready-made label formats

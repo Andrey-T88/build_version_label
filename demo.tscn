@@ -21,7 +21,8 @@ theme_override_font_sizes/font_size = 34
 
 [node name="Hint" type="Label" parent="Box"]
 layout_mode = 2
-text = "The label above is a BuildVersionLabel node."
+text = "The label above is a BuildVersionLabel node. It counts every run in the editor and every export, on any platform."
 horizontal_alignment = 1
+autowrap_mode = 3
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 16

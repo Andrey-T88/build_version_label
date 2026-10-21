@@ -1,3 +1,11 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
@@ -6,6 +14,24 @@ config/name="Build Version Label Demo"
 run/main_scene="res://demo.tscn"
 config/features=PackedStringArray("4.7")
 
+[build_version_label]
+
+bump_on_run=true
+bump_on_export=true
+builds_per_version=0
+on_limit_reached=2
+first_build=1
+store_code_mode=0
+sync_export_presets=true
+seed_version_name="1.0.0"
+create_missing_stamp=true
+display_format_preset=0
+fallback_version="0.0.0"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/build_version_label/plugin.cfg")
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true

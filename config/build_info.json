@@ -1,1 +1,12 @@
-{"version_name": "1.0.0", "version_code": 3}
+{
+	"version_name": "1.0.0",
+	"version_code": 2,
+	"store_code": 2,
+	"total_builds": 2,
+	"next_version_name": "1.0.0",
+	"next_version_code": 3,
+	"next_store_code": 3,
+	"event": "run",
+	"preset": "",
+	"updated": "2026-10-21T15:57:34Z"
+}
